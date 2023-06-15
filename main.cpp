@@ -9,7 +9,7 @@
 #include<iostream>
 #include"src/utils.h"
 #include"src/shader.h"
-#include"camera.h"
+#include"src/camera.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
