@@ -40,10 +40,13 @@ int main()
     camera cm(glm::vec3(0.0,0.0,-3.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
     premat = cm.get_view_matrix();
 
+    while(!glfwWindowShouldClose(window)){
+        processInput(window);
+        glfwPollEvents(); 
+    }
+
     glfwTerminate();
     std::cout << "ok" << premat[0][0] << std::endl;
-    int a;
-    std :: cin >> a;
 	return 0;
 }
 
