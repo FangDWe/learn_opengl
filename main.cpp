@@ -2,6 +2,9 @@
 #include"GLFW/glfw3.h"
 #include"src/utils.h"
 #include"src/shader.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -32,8 +35,10 @@ int main()
         return 0;
     }
 
+    glm::mat4 premat = glm::mat4(1.0);
+
     glfwTerminate();
-    std::cout << "ok" << std::endl;
+    std::cout << "ok" << premat[0][0] << std::endl;
     int a;
     std :: cin >> a;
 	return 0;
