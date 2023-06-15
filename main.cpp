@@ -1,7 +1,5 @@
 ﻿#include"glad/glad.h"
 #include"GLFW/glfw3.h"
-#include"src/utils.h"
-#include"src/shader.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -9,6 +7,9 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include<iostream>
+#include"src/utils.h"
+#include"src/shader.h"
+#include"camera.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -36,6 +37,8 @@ int main()
     }
 
     glm::mat4 premat = glm::mat4(1.0);
+    camera cm(glm::vec3(0.0,0.0,-3.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
+    premat = cm.get_view_matrix();
 
     glfwTerminate();
     std::cout << "ok" << premat[0][0] << std::endl;
