@@ -1,6 +1,7 @@
 #pragma once
 #include"glad/glad.h"
 #include"GLFW/glfw3.h"
+#include"src/utils.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -35,6 +36,10 @@ public:
     void set_int(std::string name, unsigned int a){
         glUniform1i(glGetUniformLocation(ID, name.c_str()), a);
     }
+
+    void set_dir_light(std::string name, DirLight light);
+    void set_point_light(std::string name, PointLight light);
+    void set_flash_light(std::string name, FlashLight light);
 private:
 	unsigned int ID;
 };
@@ -111,4 +116,35 @@ ShaderProgma::ShaderProgma(const char* vertex_shader_path, const char* frag_shad
 }
 
 ShaderProgma::~ShaderProgma(){
+}
+
+void ShaderProgma::set_dir_light(std::string name, DirLight light){
+    set_vec3(name+".direction", light.direction);
+    set_vec3(name+".ambient", light.ambient);
+    set_vec3(name+".diffuse", light.diffuse);
+    set_vec3(name+".specular", light.specular);
+}
+
+void ShaderProgma::set_point_light(std::string name, PointLight light){
+    set_vec3(name+".position", light.position);
+    set_vec3(name+".ambient", light.ambient);
+    set_vec3(name+".diffuse", light.diffuse);
+    set_vec3(name+".specular", light.specular);
+
+    set_float(name+".linear", light.linear);
+    set_float(name+".quadratic", light.quadratic); 
+}
+
+
+void ShaderProgma::set_flash_light(std::string name, FlashLight light){
+    set_vec3(name+".direction", light.direction);
+    set_vec3(name+".position", light.position);
+    set_vec3(name+".ambient", light.ambient);
+    set_vec3(name+".diffuse", light.diffuse);
+    set_vec3(name+".specular", light.specular);
+
+    set_float(name+".linear", light.linear);
+    set_float(name+".quadratic", light.quadratic); 
+    set_float(name+".cutOffin", light.cutOffin);
+    set_float(name+".cutOffout", light.cutOffout); 
 }

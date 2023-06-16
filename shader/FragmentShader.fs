@@ -45,10 +45,9 @@ struct Material {
 }; 
 
 uniform PointLight point_light;
-
+uniform FlashLight flash_light;
 uniform DirLight dir_light;
 uniform vec3 eye_pos;
-uniform vec3 ambient_light;
 uniform Material material;
 
 
@@ -99,13 +98,14 @@ vec3 calc_flash_light(FlashLight light, vec3 norm, vec3 FragPos, vec3 w, vec3 di
 void main()
 {
     vec3 diff_color = vec3(texture(material.diffuse, Tex));
-    vec3 spec_color = vec3(texture(material.specular, Tex));
+    // vec3 spec_color = vec3(texture(material.specular, Tex));
 
-    vec3 norm = normalize(Normal);
-    vec3 w = normalize(eye_pos - FragPos);
+    // vec3 norm = normalize(Normal);
+    // vec3 w = normalize(eye_pos - FragPos);
 
-    //vec3 light_total = calc_dir_light(dirLight, norm, w, diff_color, spec_color);
-    //light_total += calc_point_light(point_light, norm, w, diff_color, spec_color);
+    //vec3 light_total = calc_dir_light(dir_light, norm, w, diff_color, spec_color);
+    //vec3 light_total = calc_point_light(point_light, norm, FragPos, w, diff_color, spec_color);
+    //vec3 light_total = calc_flash_light(flash_light, norm, FragPos, w, diff_color, spec_color);
 
     FragColor = vec4(diff_color, 1.0);
     //FragColor = vec4(light_total, 1.0);
