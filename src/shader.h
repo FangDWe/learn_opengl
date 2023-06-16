@@ -1,6 +1,9 @@
 #pragma once
 #include"glad/glad.h"
 #include"GLFW/glfw3.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include<iostream>
 #include<fstream>
 #include<sstream>
@@ -12,8 +15,23 @@ public:
 	~ShaderProgma();
 
 	void set_vec3(std::string name, float x, float y, float z) {
-
+        glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
 	}
+    void set_vec3(std::string name, glm::vec3 v) {
+        glUniform3f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z);
+	}
+
+    void set_mat4(std::string name, glm::mat4 m){
+        glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
+    }
+
+    void set_float(std::string name, float a){
+        glUniform1f(glGetUniformLocation(ID, name.c_str()), a);
+    }
+
+    void set_int(std::string name, unsigned int a){
+        glUniform1i(glGetUniformLocation(ID, name.c_str()), a);
+    }
 private:
 	unsigned int ID;
 };
