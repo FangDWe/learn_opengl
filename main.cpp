@@ -55,6 +55,7 @@ int main()
         std::cout << "Error Assmip" << import.GetErrorString() << std::endl;
         return -1;
     }
+    std::cout << scene->mNumMeshes << std::endl;
 
     float vertices[] = {
     // positions          // normals           // texture coords

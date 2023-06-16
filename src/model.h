@@ -54,7 +54,7 @@ namespace MModel{
         void processNode(aiNode *node, const aiScene *scene);
         Mesh processMesh(aiMesh *mesh, const aiScene *scene);
         std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
-        unsigned int Model::TextureFromFile(const char *path, const std::string &directory);
+        unsigned int Model::TextureFromFile(const char *path);
     };
 
 
@@ -64,6 +64,8 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     m_vertices = vertices;
     m_indices = indices;
     m_textures = textures;
+
+    setupMesh();
 }
 
 void Mesh::setupMesh()
@@ -78,8 +80,7 @@ void Mesh::setupMesh()
     glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), &m_vertices[0], GL_STATIC_DRAW);  
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), 
-                 &m_indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0], GL_STATIC_DRAW);
 
     
     glEnableVertexAttribArray(0);   
@@ -93,7 +94,6 @@ void Mesh::setupMesh()
 
     glBindVertexArray(0);
 } 
-
 
 void Mesh::Draw(ShaderProgma shader) 
 {
@@ -116,6 +116,7 @@ void Mesh::Draw(ShaderProgma shader)
     glActiveTexture(GL_TEXTURE0);
 
     glBindVertexArray(VAO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glDrawElements(GL_TRIANGLES, m_indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
@@ -142,6 +143,7 @@ void Model::loadModel(std::string path){
 
 void Model::processNode(aiNode *node, const aiScene *scene)
 {
+    if(node == nullptr) return;
     
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
@@ -249,7 +251,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         bool skip = false;
         for(unsigned int j = 0; j < textures_loaded.size(); j++)
         {
-            if(std::strcmp(textures_loaded[j].path.data, str.C_Str()) == 0)
+            if(std::strcmp(textures_loaded[j].path.C_Str(), str.C_Str()) == 0)
             {
                 m_textures.push_back(textures_loaded[j]);
                 skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
@@ -259,9 +261,9 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         if(!skip)
         {   // if texture hasn't been loaded already, load it
             Texture texture;
-            texture.id = TextureFromFile(str.C_Str(), this->directory);
+            texture.id = TextureFromFile(str.C_Str());
             texture.type = typeName;
-            texture.path = str.C_Str();
+            texture.path = str;
             m_textures.push_back(texture);
             textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
         }
@@ -269,7 +271,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     return m_textures;
 }
 
-unsigned int Model::TextureFromFile(const char *path, const std::string &directory)
+unsigned int Model::TextureFromFile(const char *path)
 {
     std::string filename = std::string(path);
     filename = directory + '/' + filename;
