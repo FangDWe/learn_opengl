@@ -13,6 +13,9 @@ class ShaderProgma
 public:
 	ShaderProgma(const char* vertex_shader_path, const char* frag_shader_path);
 	~ShaderProgma();
+    void use(){
+        glUseProgram(ID);
+    }
 
 	void set_vec3(std::string name, float x, float y, float z) {
         glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);

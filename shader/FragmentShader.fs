@@ -1,8 +1,6 @@
 #version 330 core
 out vec4 FragColor;
 
-out vec4 FragColor;  
-
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 Tex;
@@ -45,7 +43,7 @@ struct Material {
     sampler2D diffuse;
     sampler2D specular;
 }; 
-#define NR_POINT_LIGHTS 4
+
 uniform PointLight point_light;
 
 uniform DirLight dir_light;
@@ -106,8 +104,9 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 w = normalize(eye_pos - FragPos);
 
-    vec3 light_total = calc_dir_light(dirLight, norm, w, diff_color, spec_color);
-    light_total += calc_point_light(point_light, norm, w, diff_color, spec_color);
+    //vec3 light_total = calc_dir_light(dirLight, norm, w, diff_color, spec_color);
+    //light_total += calc_point_light(point_light, norm, w, diff_color, spec_color);
 
-    FragColor = vec4(light_total, 1.0);
+    FragColor = vec4(diff_color, 1.0);
+    //FragColor = vec4(light_total, 1.0);
 }
