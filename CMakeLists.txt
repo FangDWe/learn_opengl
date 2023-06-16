@@ -6,7 +6,8 @@ project (learn_opengl)
 add_definitions(-Dcurrent_path="${CMAKE_CURRENT_SOURCE_DIR}")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-                        
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src src_list)

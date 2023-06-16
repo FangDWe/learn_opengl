@@ -8,12 +8,18 @@
 #include <assimp/postprocess.h>
 #include<iostream>
 #include"src/utils.h"
-#include"src/shader.h"
+#include"src/model.h"
 #include"src/camera.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void mouse_callback(GLFWwindow* window, double x, double y);
 
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 
 int main()
 {
@@ -29,18 +35,14 @@ int main()
     // read shader and create progma
     std::string vs = std::string(current_path) + std::string("/shader/VertexShader.vs"), fs = std::string(current_path) + std::string("/shader/FragmentShader.fs");
     ShaderProgma progma1(vs.c_str(), fs.c_str());
+
+    stbi_set_flip_vertically_on_load(true);
+    glEnable(GL_DEPTH_TEST);
 #pragma endregion
 
 
 #pragma region init 3D relative
-    Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile("D:\\resource\\nanosuit\\nanosuit.obj", aiProcess_Triangulate | aiProcess_FlipUVs);
-
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-    {
-        std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
-        return 0;
-    }
+    MModel::Model ourModel(std::string(current_path) + std::string("/resource/nanosuit/nanosuit.obj"));
 
     glm::mat4 premat = glm::mat4(1.0);
     camera cm(glm::vec3(0.0,0.0,-3.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
@@ -52,8 +54,30 @@ int main()
     while(!glfwWindowShouldClose(window)){
         processInput(window);
 
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+
         glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        progma1.use();
+
+        // view/projection transformations
+        glm::mat4 projection = glm::perspective((float)40.0, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = cm.get_view_matrix();
+        progma1.set_mat4("projection", projection);
+        progma1.set_mat4("view", view);
+
+        // render the loaded model
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        progma1.set_mat4("trans", model);
+        glm::mat4 ntrans = glm::transpose(glm::inverse(model));
+        progma1.set_mat4("ntrans", ntrans);
+        ourModel.Draw(progma1);
 
         glfwSwapBuffers(window);
         glfwPollEvents(); 
