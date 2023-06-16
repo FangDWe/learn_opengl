@@ -16,6 +16,7 @@ uniform mat4 ntrans;
 void main()
 {   
     gl_Position = proj * view * trans * vec4(aPos, 1.0f);
+
     Normal = normalize(vec3(ntrans * vec4(aNormal, 1.0)));
     FragPos = vec3(trans * vec4(aPos, 1.0f));
     Tex = aTex;
