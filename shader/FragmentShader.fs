@@ -108,5 +108,6 @@ void main()
     //vec3 light_total = calc_flash_light(flash_light, norm, FragPos, w, diff_color, spec_color);
 
     FragColor = vec4(diff_color, 1.0);
+    
     //FragColor = vec4(light_total, 1.0);
 }

@@ -57,8 +57,11 @@ int main()
     std::cout << ourModel.meshes.size() << std::endl;
     for(int i = 0; i < ourModel.meshes.size(); i++){
         std::cout << i << " " << ourModel.meshes[i].m_vertices.size() << std::endl;
+        for(int j = 0; j < ourModel.meshes[i].m_textures.size(); j++){
+            std::cout << i << " " << ourModel.meshes[i].m_textures[j].type << std::endl;
+        }
     }
-    
+
     float vertices[] = {
     // positions          // normals           // texture coords
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
@@ -135,23 +138,25 @@ int main()
 #pragma region run
     //open the window 
     //progma1.use();
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
     glm::mat4 trans = glm::mat4(1.0);
     glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
     //progma1.set_dir_light("dir_light", dirlight);
     //progma1.set_flash_light("flash_light", flashlight);
 
-    // while(!glfwWindowShouldClose(window)){
-    //     processInput(window);
+    while(!glfwWindowShouldClose(window)){
+        processInput(window);
 
         // float currentFrame = static_cast<float>(glfwGetTime());
         // deltaTime = currentFrame - lastFrame;
         // lastFrame = currentFrame;
 
 
-        // glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // progma1.use();
+        progma1.use();
         // glActiveTexture(GL_TEXTURE0);
         // glBindTexture(GL_TEXTURE_2D, diff_map);
         // // bind specular map
@@ -160,30 +165,28 @@ int main()
 
         // // view/projection transformations
         
-        // glm::mat4 view = cm.get_view_matrix();
-        // progma1.set_mat4("proj", projection);
-        // progma1.set_mat4("view", view);
+        glm::mat4 view = cm.get_view_matrix();
+        progma1.set_mat4("proj", projection);
+        progma1.set_mat4("view", view);
         // progma1.set_mat4("trans", trans);
         // progma1.set_mat4("ntrans", trans);
-        // progma1.set_vec3("eye_pos", cm.c_pos);
-        // progma1.set_int("material.diffuse", 0);
-        // progma1.set_int("material.specular", 1);
+        progma1.set_vec3("eye_pos", cm.c_pos);
 
         // glBindVertexArray(cubeVAO);
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // render the loaded model
-        // glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        // progma1.set_mat4("trans", model);
-        // glm::mat4 ntrans = glm::transpose(glm::inverse(model));
-        // progma1.set_mat4("ntrans", ntrans);
-        // ourModel.Draw(progma1);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        progma1.set_mat4("trans", model);
+        glm::mat4 ntrans = glm::transpose(glm::inverse(model));
+        progma1.set_mat4("ntrans", ntrans);
+        ourModel.Draw(progma1);
 
-    //     glfwSwapBuffers(window);
-    //     glfwPollEvents(); 
-    // }
+        glfwSwapBuffers(window);
+        glfwPollEvents(); 
+    }
 #pragma endregion
 
     //close window
@@ -203,7 +206,7 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    float cameraSpeed = 0.05f, movez = 0, movex = 0; // adjust accordingly
+    float cameraSpeed = 0.005f, movez = 0, movex = 0; // adjust accordingly
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         movez += cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

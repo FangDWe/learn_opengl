@@ -46,19 +46,23 @@ void Mesh::Draw(ShaderProgma shader)
 {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
+    glActiveTexture(GL_TEXTURE0);
     for(unsigned int i = 0; i < m_textures.size(); i++)
     {
-        glActiveTexture(GL_TEXTURE0 + i);
+        
         
         std::string number;
         std::string name = m_textures[i].type;
-        if(name == "texture_diffuse")
-            number = std::to_string(diffuseNr++);
-        else if(name == "texture_specular")
-            number = std::to_string(specularNr++);
+        if(name == "texture_diffuse"){
+            //number = std::to_string(diffuseNr++);
+        // else if(name == "texture_specular")
+        //     number = std::to_string(specularNr++);
 
-        shader.set_int(("material." + name + number).c_str(), i);
-        glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
+            shader.set_int("material.diffuse", i);
+            glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
+            break;
+        }
+        
     }
     glActiveTexture(GL_TEXTURE0);
 
@@ -202,7 +206,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         
         aiString str;
         mat->GetTexture(type, i, &str);
-        
+
         // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
         bool skip = false;
         for(unsigned int j = 0; j < textures_loaded.size(); j++)
