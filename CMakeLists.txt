@@ -6,11 +6,14 @@ project (learn_opengl)
 add_definitions(-Dcurrent_path="${CMAKE_CURRENT_SOURCE_DIR}")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src src_list)
+
+#list(REMOVE_ITEM src_list ${CMAKE_CURRENT_SOURCE_DIR}/src/model.h ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cpp)
 
 add_executable (learn_opengl main.cpp ${src_list})
 
