@@ -89,7 +89,7 @@ ShaderProgma::ShaderProgma(const char* vertex_shader_path, const char* frag_shad
     if (!success)
     {
         glGetProgramInfoLog(ID, 512, NULL, infoLog);
-        std::cout << "SHADER PROGRAM LINKING_FAILED\n" << infoLog << std::endl;
+        std::cout << "Shader Progma Link Failed\n" << infoLog << std::endl;
     }
     glDeleteShader(vertex);
     glDeleteShader(fragment);
