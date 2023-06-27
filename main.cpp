@@ -87,6 +87,7 @@ int main()
     // read shader and create progma
     ShaderProgma progma1(get_shader_path("model", "vs").c_str(), get_shader_path("model", "fs").c_str());
     ShaderProgma sky_shader(get_shader_path("skybox", "vs").c_str(), get_shader_path("skybox", "fs").c_str());
+    ShaderProgma colorgrad_shader(get_shader_path("colorgrad", "vs").c_str(), get_shader_path("colorgrad", "fs").c_str());
 
     vector<string> faces{
         "right.jpg",
@@ -109,14 +110,14 @@ int main()
     cout << string(current_path) + string("/asset/nanosuit/nanosuit.obj") << endl;
     MModel::Model ourModel(string(current_path) + string("/asset/nanosuit/nanosuit.obj"), false);
 
-    cout << ourModel.textures_loaded.size() << endl;
-    cout << ourModel.meshes.size() << endl;
-    for(int i = 0; i < ourModel.meshes.size(); i++){
-        cout << i << " " << ourModel.meshes[i].m_vertices.size() << endl;
-        for(int j = 0; j < ourModel.meshes[i].m_textures.size(); j++){
-            cout << i << " " << ourModel.meshes[i].m_textures[j].type << endl;
-        }
-    }
+    // cout << ourModel.textures_loaded.size() << endl;
+    // cout << ourModel.meshes.size() << endl;
+    // for(int i = 0; i < ourModel.meshes.size(); i++){
+    //     cout << i << " " << ourModel.meshes[i].m_vertices.size() << endl;
+    //     for(int j = 0; j < ourModel.meshes[i].m_textures.size(); j++){
+    //         cout << i << " " << ourModel.meshes[i].m_textures[j].type << endl;
+    //     }
+    // }
 
      unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
@@ -127,12 +128,55 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 #pragma endregion
 
 
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // create a color attachment texture
+    unsigned int textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+    // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        cout << "error framebuffer is not complete!" << endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 #pragma region run
     //open the window 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glm::mat4 trans = glm::mat4(1.0);
@@ -144,11 +188,25 @@ int main()
         processInput(window);
 
 
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+
         glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glm::mat4 view = cm.get_view_matrix();
+        
+        sky_shader.use();
+        glm::mat4 viewsky = glm::mat4(glm::mat3(view));
+        sky_shader.set_mat4("proj", projection);
+        sky_shader.set_mat4("view", viewsky);
+        sky_shader.set_int("skybox", 0);
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
 
-        //glEnable(GL_DEPTH_TEST);
+
         progma1.use();
         // glActiveTexture(GL_TEXTURE0);
         // glBindTexture(GL_TEXTURE_2D, diff_map);
@@ -175,18 +233,20 @@ int main()
         progma1.set_mat4("ntrans", ntrans);
         ourModel.Draw(progma1);
 
-        sky_shader.use();
-        glDepthFunc(GL_LEQUAL);
-        view = glm::mat4(glm::mat3(view));
-        sky_shader.set_mat4("proj", projection);
-        sky_shader.set_mat4("view", view);
-        sky_shader.set_int("skybox", 0);
-        glBindVertexArray(skyboxVAO);
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        //glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+        // clear all relevant buffers
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        colorgrad_shader.use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        glDepthFunc(GL_LESS);
+        glBindVertexArray(quadVAO);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
+        colorgrad_shader.set_int("Raw", 0);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents(); 
