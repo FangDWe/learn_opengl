@@ -128,3 +128,7 @@ void ShaderProgma::set_flash_light(std::string name, FlashLight light){
     set_float(name+".cutOffin", light.cutOffin);
     set_float(name+".cutOffout", light.cutOffout); 
 }
+
+void ShaderProgma::set_uniform_buffer(std::string name, unsigned int a){
+    glUniformBlockBinding(ID, glGetUniformBlockIndex(ID, name.c_str()), a);
+}

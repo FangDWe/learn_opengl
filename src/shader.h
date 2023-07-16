@@ -24,6 +24,7 @@ public:
     void set_dir_light(std::string name, DirLight light);
     void set_point_light(std::string name, PointLight light);
     void set_flash_light(std::string name, FlashLight light);
+    void set_uniform_buffer(std::string name, unsigned int a);
 private:
 	unsigned int ID;
 };

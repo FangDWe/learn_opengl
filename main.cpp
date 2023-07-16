@@ -17,7 +17,9 @@ using namespace std;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double x, double y);
-//unsigned int loadTexture(string path);
+void test1(GLFWwindow*  window);
+void test2(GLFWwindow*  window);
+
 
 float skyboxVertices[] = {
     // positions          
@@ -67,15 +69,12 @@ float skyboxVertices[] = {
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
-
 glm::vec3 ambient = glm::vec3(0.2);
 camera cm(glm::vec3(0.0,0.0,5.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
 
 int main()
 {
-#pragma region init glfw and shader
+#pragma region init glfw
     //glfw init in util.h
     GLFWwindow*  window = GLFWInit();
 
@@ -83,11 +82,65 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
+#pragma endregion
 
-    // read shader and create progma
-    ShaderProgma progma1(get_shader_path("model", "vs").c_str(), get_shader_path("model", "fs").c_str());
+    test2(window);
+
+    //close window
+    glfwTerminate();
+
+    cout << "ok" << endl;
+	return 0;
+}
+
+
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    float cameraSpeed = 0.002f, movez = 0, movex = 0; // adjust accordingly
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        movez += cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        movez -= cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        movex -= cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        movex += cameraSpeed;
+
+    cm.move(movex, movez, 0);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double x, double y) {
+    static bool first = true;
+    static float xpos, ypos;
+    if (first) {
+        xpos = x;
+        ypos = y;
+        first = false;
+    }
+
+    float sensitivity = 0.08;
+    float offsetx = (x - xpos) * sensitivity;
+    float offsety = (ypos - y) * sensitivity;
+    xpos = x;
+    ypos = y;
+
+    cm.lookat(offsetx, offsety);
+}
+
+void test1(GLFWwindow*  window){
+        // read shader and create progma
+    ShaderProgma model_shader(get_shader_path("model", "vs").c_str(), get_shader_path("model", "fs").c_str());
     ShaderProgma sky_shader(get_shader_path("skybox", "vs").c_str(), get_shader_path("skybox", "fs").c_str());
     ShaderProgma colorgrad_shader(get_shader_path("colorgrad", "vs").c_str(), get_shader_path("colorgrad", "fs").c_str());
+    //ShaderProgma glossy_shader(get_shader_path("glossy", "vs").c_str(), get_shader_path("glossy", "fs").c_str());
 
     vector<string> faces{
         "right.jpg",
@@ -103,7 +156,7 @@ int main()
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
     // glfwTerminate();
-#pragma endregion
+
 
 
 #pragma region init 3D relative asset
@@ -181,8 +234,8 @@ int main()
     glCullFace(GL_BACK);
     glm::mat4 trans = glm::mat4(1.0);
     glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-    //progma1.set_dir_light("dir_light", dirlight);
-    //progma1.set_flash_light("flash_light", flashlight);
+    //model_shader.set_dir_light("dir_light", dirlight);
+    //model_shader.set_flash_light("flash_light", flashlight);
 
     while(!glfwWindowShouldClose(window)){
         processInput(window);
@@ -207,31 +260,24 @@ int main()
         glBindVertexArray(0);
 
 
-        progma1.use();
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, diff_map);
-        // // bind specular map
-        // glActiveTexture(GL_TEXTURE1);
-        // glBindTexture(GL_TEXTURE_2D, spec_map);
-
-        // // view/projection transformations
-        progma1.set_mat4("proj", projection);
-        progma1.set_mat4("view", view);
-        // progma1.set_mat4("trans", trans);
-        // progma1.set_mat4("ntrans", trans);
-        progma1.set_vec3("eye_pos", cm.c_pos);
-
-        // glBindVertexArray(cubeVAO);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        model_shader.use();
+        model_shader.set_mat4("proj", projection);
+        model_shader.set_mat4("view", view);
+        model_shader.set_vec3("eye_pos", cm.c_pos);
 
         // render the loaded model
+        // glossy_shader.use();
+        // glossy_shader.set_mat4("proj", projection);
+        // glossy_shader.set_mat4("view", view);
+        // glossy_shader.set_vec3("eye_pos", cm.c_pos);
+        // glossy_shader.set_int("skybox", 0);
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        progma1.set_mat4("trans", model);
+        model_shader.set_mat4("trans", model);
         glm::mat4 ntrans = glm::transpose(glm::inverse(model));
-        progma1.set_mat4("ntrans", ntrans);
-        ourModel.Draw(progma1);
+        model_shader.set_mat4("ntrans", ntrans);
+        ourModel.Draw(model_shader);
 
 
 
@@ -253,93 +299,76 @@ int main()
     }
 #pragma endregion
 
-    //close window
-    glfwTerminate();
-
     //release asset
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
 
-    cout << "ok" << endl;
-	return 0;
 }
 
 
-void processInput(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+void test2(GLFWwindow*  window){
+    // read shader and create progma
+    ShaderProgma model_shader(get_shader_path("instance", "vs").c_str(), get_shader_path("model", "fs").c_str());
 
-    float cameraSpeed = 0.005f, movez = 0, movex = 0; // adjust accordingly
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        movez += cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        movez -= cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        movex -= cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        movex += cameraSpeed;
+    stbi_set_flip_vertically_on_load(true);
 
-    cm.move(movex, movez, 1);
-}
+#pragma region init 3D relative asset
+    cout << string(current_path) + string("/asset/planet/planet.obj") << endl;
+    MModel::Model ourModel(string(current_path) + string("/asset/planet/planet.obj"), false);
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
 
-void mouse_callback(GLFWwindow* window, double x, double y) {
-    static bool first = true;
-    static float xpos, ypos;
-    if (first) {
-        xpos = x;
-        ypos = y;
-        first = false;
+#pragma endregion
+    unsigned int uboMatrices;
+    glGenBuffers(1, &uboMatrices);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+    glBufferData(GL_UNIFORM_BUFFER, 128, NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 128);
+
+#pragma region run
+    //open the window 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glm::mat4 trans = glm::mat4(1.0);
+    glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    while(!glfwWindowShouldClose(window)){
+        processInput(window);
+
+        glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glm::mat4 view = cm.get_view_matrix();
+
+        glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        model_shader.use();
+        model_shader.set_uniform_buffer("Matrices", 0);
+        model_shader.set_vec3("eye_pos", cm.c_pos);
+
+        // render the loaded model
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        model_shader.set_mat4("trans", model);
+        glm::mat4 ntrans = glm::transpose(glm::inverse(model));
+        model_shader.set_mat4("ntrans", ntrans);
+        ourModel.Draw(model_shader);
+
+
+        glfwSwapBuffers(window);
+        glfwPollEvents(); 
     }
+#pragma endregion
 
-    float sensitivity = 0.08;
-    float offsetx = (x - xpos) * sensitivity;
-    float offsety = (ypos - y) * sensitivity;
-    xpos = x;
-    ypos = y;
+    //release asset
 
-    cm.lookat(offsetx, offsety);
 }
-
-
-//unsigned int loadTexture(string path)
-//{
-//    unsigned int textureID;
-//    glGenTextures(1, &textureID);
-//
-//    int width, height, nrComponents;
-//    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrComponents, 0);
-//    if (data)
-//    {
-//        GLenum format;
-//        if (nrComponents == 1)
-//            format = GL_RED;
-//        else if (nrComponents == 3)
-//            format = GL_RGB;
-//        else if (nrComponents == 4)
-//            format = GL_RGBA;
-//
-//        glBindTexture(GL_TEXTURE_2D, textureID);
-//        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-//        glGenerateMipmap(GL_TEXTURE_2D);
-//
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//
-//        stbi_image_free(data);
-//    }
-//    else
-//    {
-//        cout << "Texture failed to load at path: " << path << endl;
-//        stbi_image_free(data);
-//    }
-//
-//    return textureID;
-//}
