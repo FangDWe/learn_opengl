@@ -31,8 +31,8 @@ namespace MModel{
             std::vector<Texture> m_textures;
             Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
             void Draw(ShaderProgma shader);
-        private:
             unsigned int VAO, VBO, EBO;
+        private:
             void setupMesh();
     };
 

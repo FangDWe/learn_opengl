@@ -1,5 +1,6 @@
 ﻿#include"glad/glad.h"
 #include"GLFW/glfw3.h"
+#include <cstdlib>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -17,8 +18,10 @@ using namespace std;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double x, double y);
+glm::mat4 *randRadius(float radius, float offset1, float offset2, float min_scale, float max_scale, int amount);
 void test1(GLFWwindow*  window);
 void test2(GLFWwindow*  window);
+
 
 
 float skyboxVertices[] = {
@@ -70,7 +73,8 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 glm::vec3 ambient = glm::vec3(0.2);
-camera cm(glm::vec3(0.0,0.0,5.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
+//camera cm(glm::vec3(0.0,0.0,5.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
+camera cm(glm::vec3(0.0,0.0,115.0), glm::vec3(0.0,0.0,-1.0), glm::vec3(0.0,1.0,0.0));
 
 int main()
 {
@@ -99,7 +103,7 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    float cameraSpeed = 0.002f, movez = 0, movex = 0; // adjust accordingly
+    float cameraSpeed = 0.05f, movez = 0, movex = 0; // adjust accordingly
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         movez += cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -308,15 +312,41 @@ void test1(GLFWwindow*  window){
 
 void test2(GLFWwindow*  window){
     // read shader and create progma
-    ShaderProgma model_shader(get_shader_path("instance", "vs").c_str(), get_shader_path("model", "fs").c_str());
+    ShaderProgma instan_shader(get_shader_path("instance", "vs").c_str(), get_shader_path("model", "fs").c_str());
+    ShaderProgma model_shader(get_shader_path("model", "vs").c_str(), get_shader_path("model", "fs").c_str());
 
     stbi_set_flip_vertically_on_load(true);
 
 #pragma region init 3D relative asset
-    cout << string(current_path) + string("/asset/planet/planet.obj") << endl;
-    MModel::Model ourModel(string(current_path) + string("/asset/planet/planet.obj"), false);
+    //cout << string(current_path) + string("/asset/planet/planet.obj") << endl;
+    MModel::Model planet_model(string(current_path) + string("/asset/planet/planet.obj"), false);
+    MModel::Model rock_model(string(current_path) + string("/asset/rock/rock.obj"), false);
 
+    int amount = 1000;
+    glm::mat4 * model_trans = randRadius(150.0f, 20.0f, 1.0f, 0.05f, 0.25f, amount);
+    unsigned int instan;
+    glGenBuffers(1, &instan);
+    glBindBuffer(GL_ARRAY_BUFFER, instan);
+    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), model_trans, GL_STATIC_DRAW);
 
+    for(int i = 0; i < rock_model.meshes.size(); i++){
+        glBindVertexArray(rock_model.meshes[i].VAO);
+
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)0);
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(sizeof(glm::vec4)));
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(2*sizeof(glm::vec4)));
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(3*sizeof(glm::vec4)));
+
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+        glBindVertexArray(0);
+    }
 #pragma endregion
     unsigned int uboMatrices;
     glGenBuffers(1, &uboMatrices);
@@ -327,13 +357,15 @@ void test2(GLFWwindow*  window){
 
 #pragma region run
     //open the window 
+
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-
     glm::mat4 trans = glm::mat4(1.0);
-    glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    glm::mat4 model = glm::translate(trans, glm::vec3(0.0f, -3.0f, 0.0f));
+    model = glm::scale(trans, glm::vec3(4.0f, 4.0f, 4.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
 
     glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
@@ -351,18 +383,25 @@ void test2(GLFWwindow*  window){
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         model_shader.use();
-        model_shader.set_uniform_buffer("Matrices", 0);
-        model_shader.set_vec3("eye_pos", cm.c_pos);
+        model_shader.set_mat4("proj", projection);
+        model_shader.set_mat4("view", view);
+        //model_shader.set_vec3("eye_pos", cm.c_pos);
 
         // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         model_shader.set_mat4("trans", model);
         glm::mat4 ntrans = glm::transpose(glm::inverse(model));
         model_shader.set_mat4("ntrans", ntrans);
-        ourModel.Draw(model_shader);
+        planet_model.Draw(model_shader);
 
+        instan_shader.use();
+        instan_shader.set_uniform_buffer("Matrices", 0);
+        instan_shader.set_int("material.diffuse", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, rock_model.textures_loaded[0].id);
+        for(int i = 0; i < rock_model.meshes.size(); i++){
+            glBindVertexArray(rock_model.meshes[i].VAO);
+            glDrawElementsInstanced(GL_TRIANGLES, rock_model.meshes[i].m_indices.size(), GL_UNSIGNED_INT, 0, amount);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents(); 
@@ -371,4 +410,33 @@ void test2(GLFWwindow*  window){
 
     //release asset
 
+}
+
+glm::mat4 *randRadius(float radius, float offset1, float offset2, float min_scale, float max_scale, int amount){
+    glm::mat4 *model_trans;
+    model_trans = new glm::mat4[amount];
+    srand(glfwGetTime());
+
+    for(int i = 0; i < amount; i++){
+        glm::mat4 t = glm::mat4(1.0);
+        
+        float angle = float(i)/float(amount)*360.0f;
+        float d = (rand()%(int)(2*offset1*100))/100.0f - offset1;
+        float y = (rand()%(int)(2*offset2*100))/100.0f - offset2;
+        float x = sin(angle)*(radius+d);
+        float z = cos(angle)*(radius+d);
+
+        cout << d << endl;
+
+        float scale = (rand()%(int)((max_scale-min_scale)*100))/100.0f + min_scale;
+        float rot = (rand() % 360);
+
+        t = glm::scale(t, glm::vec3(scale)); 
+        t = glm::translate(t, glm::vec3(x, y, z));
+        t = glm::rotate(t, rot, glm::vec3(0.4f, 0.6f, 0.8f));
+
+        model_trans[i] = t;
+    }
+
+    return model_trans;
 }
