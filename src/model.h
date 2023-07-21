@@ -40,12 +40,16 @@ namespace MModel{
     class Model{
         public:
         Model(std::string path, bool gamma);
+        Model();
+        void Init(std::string path, bool gamma);
         void Draw(ShaderProgma shader);
         bool gammaCorrection;
         std::vector<Texture> textures_loaded;
         std::vector<Mesh> meshes;
         std::string directory;
-    private:
+        bool is_init;
+
+        private:
         void loadModel(std::string path);
         void processNode(aiNode *node, const aiScene *scene);
         Mesh processMesh(aiMesh *mesh, const aiScene *scene);

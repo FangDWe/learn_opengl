@@ -21,7 +21,7 @@ void mouse_callback(GLFWwindow* window, double x, double y);
 glm::mat4 *randRadius(float radius, float offset1, float offset2, float min_scale, float max_scale, int amount);
 void test1(GLFWwindow*  window);
 void test2(GLFWwindow*  window);
-
+void test3(GLFWwindow*  window);
 
 
 float skyboxVertices[] = {
@@ -90,7 +90,7 @@ int main()
     glfwSetCursorPosCallback(window, mouse_callback);
 #pragma endregion
 
-    test2(window);
+    test3(window);
 
     //close window
     glfwTerminate();
@@ -139,6 +139,33 @@ void mouse_callback(GLFWwindow* window, double x, double y) {
     ypos = y;
 
     cm.lookat(offsetx, offsety);
+}
+
+glm::mat4 *randRadius(float radius, float offset1, float offset2, float min_scale, float max_scale, int amount){
+    glm::mat4 *model_trans;
+    model_trans = new glm::mat4[amount];
+    srand(glfwGetTime());
+
+    for(int i = 0; i < amount; i++){
+        glm::mat4 t = glm::mat4(1.0);
+        
+        float angle = float(i)/float(amount)*360.0f;
+        float d = (rand()%(int)(2*offset1*100))/100.0f - offset1;
+        float y = (rand()%(int)(2*offset2*100))/100.0f - offset2;
+        float x = sin(angle)*(radius+d);
+        float z = cos(angle)*(radius+d);
+
+        float scale = (rand()%(int)((max_scale-min_scale)*100))/100.0f + min_scale;
+        float rot = (rand() % 360);
+
+        t = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+        t = glm::scale(t, glm::vec3(scale));
+        t = glm::rotate(t, rot, glm::vec3(0.4f, 0.6f, 0.8f));
+
+        model_trans[i] = t;
+    }
+
+    return model_trans;
 }
 
 void test1(GLFWwindow*  window){
@@ -414,29 +441,170 @@ void test2(GLFWwindow*  window){
 
 }
 
-glm::mat4 *randRadius(float radius, float offset1, float offset2, float min_scale, float max_scale, int amount){
-    glm::mat4 *model_trans;
-    model_trans = new glm::mat4[amount];
-    srand(glfwGetTime());
+void test3(GLFWwindow*  window){
+        // read shader and create progma
+    ShaderProgma model_shader(get_shader_path("model", "vs").c_str(), get_shader_path("model", "fs").c_str());
+    ShaderProgma sky_shader(get_shader_path("skybox", "vs").c_str(), get_shader_path("skybox", "fs").c_str());
+    ShaderProgma colorgrad_shader(get_shader_path("colorgrad", "vs").c_str(), get_shader_path("colorgrad", "fs").c_str());
 
-    for(int i = 0; i < amount; i++){
-        glm::mat4 t = glm::mat4(1.0);
+    vector<string> faces{
+        "right.jpg",
+        "left.jpg",
+        "top.jpg",
+        "bottom.jpg",
+        "front.jpg",
+        "back.jpg"
+    };
+
+    unsigned int skyboxTex = load_cube_map(string(current_path) + "/asset/skybox/", faces);
+
+    stbi_set_flip_vertically_on_load(true);
+    glEnable(GL_DEPTH_TEST);
+
+#pragma region init 3D relative asset
+    string arctecturepath = "/asset/obj/Residential Buildings 0";// 01.obj;
+    int n_arct = 10;
+    MModel::Model *arcts = new MModel::Model[n_arct];
+    for(int i = 1; i <= n_arct; i++){
+        string t;
+        t = i < 10 ? "0" : "";
+        t += to_string(i) + ".obj";
         
-        float angle = float(i)/float(amount)*360.0f;
-        float d = (rand()%(int)(2*offset1*100))/100.0f - offset1;
-        float y = (rand()%(int)(2*offset2*100))/100.0f - offset2;
-        float x = sin(angle)*(radius+d);
-        float z = cos(angle)*(radius+d);
-
-        float scale = (rand()%(int)((max_scale-min_scale)*100))/100.0f + min_scale;
-        float rot = (rand() % 360);
-
-        t = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
-        t = glm::scale(t, glm::vec3(scale));
-        t = glm::rotate(t, rot, glm::vec3(0.4f, 0.6f, 0.8f));
-
-        model_trans[i] = t;
+        arcts[i-1] = MModel::Model(string(current_path) + arctecturepath + t, false);
     }
+    //MModel::Model ourModel(string(current_path) + arctecturepath, false);
 
-    return model_trans;
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+#pragma endregion
+
+
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // create a color attachment texture
+    unsigned int textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT); // use a single renderbuffer object for both a depth AND stencil buffer.
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+    // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        cout << "error framebuffer is not complete!" << endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+#pragma region run
+    //open the window 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glm::mat4 trans = glm::mat4(1.0);
+    glm::mat4 projection = glm::perspective(glm::radians(40.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    //model_shader.set_dir_light("dir_light", dirlight);
+    //model_shader.set_flash_light("flash_light", flashlight);
+
+    while(!glfwWindowShouldClose(window)){
+        processInput(window);
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+
+        glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glm::mat4 view = cm.get_view_matrix();
+        
+        sky_shader.use();
+        glm::mat4 viewsky = glm::mat4(glm::mat3(view));
+        sky_shader.set_mat4("proj", projection);
+        sky_shader.set_mat4("view", viewsky);
+        sky_shader.set_int("skybox", 0);
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+
+
+        model_shader.use();
+        model_shader.set_mat4("proj", projection);
+        model_shader.set_mat4("view", view);
+        model_shader.set_vec3("eye_pos", cm.c_pos);
+
+        // render the loaded model
+        // glossy_shader.use();
+        // glossy_shader.set_mat4("proj", projection);
+        // glossy_shader.set_mat4("view", view);
+        // glossy_shader.set_vec3("eye_pos", cm.c_pos);
+        // glossy_shader.set_int("skybox", 0);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+        model_shader.set_mat4("trans", model);
+        glm::mat4 ntrans = glm::transpose(glm::inverse(model));
+        model_shader.set_mat4("ntrans", ntrans);
+        for(int i = 0; i < n_arct; i++)
+            arcts[i].Draw(model_shader);
+
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        //glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+        // clear all relevant buffers
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        colorgrad_shader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(quadVAO);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);	// use the color attachment texture as the texture of the quad plane
+        colorgrad_shader.set_int("Raw", 0);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+        glfwSwapBuffers(window);
+        glfwPollEvents(); 
+    }
+#pragma endregion
+
+    //release asset
+    delete[] arcts;
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
+
 }

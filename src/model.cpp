@@ -1,9 +1,22 @@
 #include"model.h"
 using namespace MModel;
 
+Model::Model()
+{
+    is_init = false;
+}
+
 Model::Model(std::string path, bool gamma)
 {
     gammaCorrection = gamma;
+    is_init = true;
+    loadModel(path);
+}
+
+void Model::Init(std::string path, bool gamma)
+{
+    gammaCorrection = gamma;
+    is_init = true;
     loadModel(path);
 }
 
@@ -74,6 +87,8 @@ void Mesh::Draw(ShaderProgma shader)
 
 void Model::Draw(ShaderProgma shader)
 {
+    if(!is_init) return;
+
     for(unsigned int i = 0; i < meshes.size(); i++)
         meshes[i].Draw(shader);
 }
