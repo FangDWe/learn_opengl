@@ -82,6 +82,8 @@ int main()
     //glfw init in util.h
     GLFWwindow*  window = GLFWInit();
 
+    glEnable(GL_MULTISAMPLE);
+
     //windows size changed callback
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -322,8 +324,8 @@ void test2(GLFWwindow*  window){
     MModel::Model planet_model(string(current_path) + string("/asset/planet/planet.obj"), false);
     MModel::Model rock_model(string(current_path) + string("/asset/rock/rock.obj"), false);
 
-    int amount = 1000;
-    glm::mat4 * model_trans = randRadius(150.0f, 20.0f, 1.0f, 0.05f, 0.25f, amount);
+    int amount = 100000;
+    glm::mat4 * model_trans = randRadius(150.0f, 25.0f, 1.0f, 0.05f, 0.25f, amount);
     unsigned int instan;
     glGenBuffers(1, &instan);
     glBindBuffer(GL_ARRAY_BUFFER, instan);
@@ -426,13 +428,11 @@ glm::mat4 *randRadius(float radius, float offset1, float offset2, float min_scal
         float x = sin(angle)*(radius+d);
         float z = cos(angle)*(radius+d);
 
-        cout << d << endl;
-
         float scale = (rand()%(int)((max_scale-min_scale)*100))/100.0f + min_scale;
         float rot = (rand() % 360);
 
-        t = glm::scale(t, glm::vec3(scale)); 
-        t = glm::translate(t, glm::vec3(x, y, z));
+        t = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+        t = glm::scale(t, glm::vec3(scale));
         t = glm::rotate(t, rot, glm::vec3(0.4f, 0.6f, 0.8f));
 
         model_trans[i] = t;
